@@ -15,7 +15,6 @@ const PROCESSES = [
   { pid: 1042, name: "volare_admin.module", note: "Laravel · MySQL · DevExtreme", load: 72 },
   { pid: 2210, name: "vocalvault.dev", note: "PERN · speech recognition", load: 55 },
   { pid: 3307, name: "leetcode.daily", note: "Python · binary search · linked lists", load: 38 },
-  { pid: 4001, name: "uk_internship.scan", note: "applications · 2027 cycle", load: 26 },
 ];
 
 const INCIDENTS = [
@@ -234,6 +233,7 @@ const CMDS = {
     "  projects     — active + shipped builds",
     "  experience   — work log",
     "  contact      — open a channel",
+    "  theme        — change colors (default|matrix|amber)",
     "  secret       — tail the real bug log",
     "  clear        — wipe terminal",
   ],
@@ -274,7 +274,72 @@ const CMDS = {
   ],
 };
 
-function Terminal() {
+function renderLineContent(s) {
+  if (typeof s !== "string") return s;
+
+  if (s.startsWith("> ")) {
+    return <span className="amber">{s}</span>;
+  }
+
+  if (s.includes("       — ")) {
+    const idx = s.indexOf(" — ");
+    const cmdPart = s.substring(0, idx);
+    const descPart = s.substring(idx);
+    return (
+      <>
+        <span className="cyan">{cmdPart}</span>
+        <span className="dim">{descPart}</span>
+      </>
+    );
+  }
+
+  if (s.startsWith("email ") || s.startsWith("github ") || s.startsWith("linkedin ")) {
+    const parts = s.split(/\s+/);
+    const key = parts[0];
+    const val = s.substring(key.length).trim();
+    return (
+      <>
+        <span className="cyan" style={{ display: "inline-block", width: 100 }}>{key}</span>
+        <span className="amber">{val}</span>
+      </>
+    );
+  }
+
+  if (s.startsWith("PRJ-")) {
+    const parts = s.split(/\s+/);
+    const id = parts[0];
+    const name = parts[1];
+    const status = parts[2];
+    const desc = s.substring(s.indexOf(status) + status.length).trim();
+    const statusClass = status === "ACTIVE" ? "ok" : "cyan";
+    return (
+      <>
+        <span className="cyan" style={{ display: "inline-block", width: 100 }}>{id}</span>
+        <span style={{ display: "inline-block", width: 180 }}>{name}</span>
+        <span className={statusClass} style={{ display: "inline-block", width: 90 }}>{status}</span>
+        <span className="dim">{desc}</span>
+      </>
+    );
+  }
+
+  if (s.startsWith("[")) {
+    const closeBracketIdx = s.indexOf("]");
+    if (closeBracketIdx !== -1) {
+      const tag = s.substring(1, closeBracketIdx);
+      const rest = s.substring(closeBracketIdx + 1);
+      return (
+        <>
+          <span className="red">[{tag}]</span>
+          <span>{rest}</span>
+        </>
+      );
+    }
+  }
+
+  return s;
+}
+
+function Terminal({ theme, onThemeChange }) {
   const [lines, setLines] = useState([
     { t: "out", s: "adrian.chen console v2.0 — type 'help' or tap a command" },
   ]);
@@ -288,12 +353,37 @@ function Terminal() {
   }, [lines]);
 
   const run = (raw) => {
-    const cmd = raw.trim().toLowerCase();
+    const parts = raw.trim().split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
     if (!cmd) return;
     if (cmd === "clear") { setLines([]); return; }
-    const out = CMDS[cmd]
-      ? CMDS[cmd]()
-      : [`command not found: ${cmd} — try 'help'`];
+
+    let out;
+    if (cmd === "theme") {
+      const selected = args[0]?.toLowerCase();
+      if (selected === "matrix" || selected === "green") {
+        onThemeChange("matrix");
+        out = ["theme changed to 'matrix' (green phosphor CRT)"];
+      } else if (selected === "amber") {
+        onThemeChange("amber");
+        out = ["theme changed to 'amber' (amber gas-plasma)"];
+      } else if (selected === "default" || selected === "reset") {
+        onThemeChange("default");
+        out = ["theme reset to console default"];
+      } else {
+        out = [
+          `current theme: ${theme}`,
+          "usage: theme [default|matrix|amber]",
+        ];
+      }
+    } else {
+      out = CMDS[cmd]
+        ? CMDS[cmd]()
+        : [`command not found: ${cmd} — try 'help'`];
+    }
+
     setLines((l) => [...l, { t: "in", s: raw }, ...out.map((s) => ({ t: "out", s }))]);
     setHist((h) => [raw, ...h]);
     setHIdx(-1);
@@ -327,7 +417,7 @@ function Terminal() {
           <div key={i} style={{ whiteSpace: "pre-wrap" }}>
             {l.t === "in"
               ? <span><span className="amber">❯ </span><span className="cyan">{l.s}</span></span>
-              : <span className="dim">{l.s}</span>}
+              : <span className="dim">{renderLineContent(l.s)}</span>}
           </div>
         ))}
       </div>
@@ -407,9 +497,10 @@ function Incident({ inc, open, onToggle }) {
 export default function App() {
   const uptime = useUptime();
   const [openId, setOpenId] = useState("INC-1615");
+  const [theme, setTheme] = useState("default");
 
   return (
-    <div className="ic-root">
+    <div className={`ic-root theme-${theme}`}>
       <StatusBar uptime={uptime} />
 
       <div className="wrap">
@@ -436,7 +527,7 @@ export default function App() {
               <Sparkline />
             </div>
           </div>
-          <Terminal />
+          <Terminal theme={theme} onThemeChange={setTheme} />
         </div>
 
         {/* INCIDENTS */}

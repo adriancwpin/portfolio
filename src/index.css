@@ -11,6 +11,36 @@
   --text: #D5DEEA;
 }
 
+.ic-root {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.theme-matrix {
+  --bg: #030504;
+  --panel: #060a08;
+  --panel2: #020403;
+  --line: #0a2414;
+  --cyan: #00ff66;
+  --amber: #33ff33;
+  --dim: #008f39;
+  --ok: #00ff66;
+  --red: #ff3333;
+  --text: #00ff66;
+}
+
+.theme-amber {
+  --bg: #0f0700;
+  --panel: #1a0f00;
+  --panel2: #080300;
+  --line: #3a1f00;
+  --cyan: #ffb000;
+  --amber: #ffcc00;
+  --dim: #995c00;
+  --ok: #ffb000;
+  --red: #ff3300;
+  --text: #ffb000;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
